@@ -50,7 +50,7 @@ const byte CUBBY2DATA[] = {
     0x00, 0x00, 0x00, 0x00, // 0, 0, 0, 0,
     0x00, 0x00, 0x00, 0x00, // 0, 0, 0, 0,
     0x00, 0x00, 0x00, 0x00, // 0, 0, 0, 0,
-    0x00, 0x00, 0x00, 0x01  // 0, 0, 0, 2
+    0x00, 0x00, 0x00, 0x02  // 0, 0, 0, 2
 };
 
 class Cubby {
@@ -69,12 +69,25 @@ public:
         CubbyNum = num;  // Initialize CubbyNum
     }
 
-    const byte* findByIdentifier(byte *cardID, Cubby *cubbyArray) {
-        for (byte i = 0; i < arraySize; ++i) {
-            if (memcmp(cubbyArray[i].identifier, cardID, sizeof(cubbyArray[i].identifier)) == 0) {
+    byte* getIdentifier() {
+	return identifier;
+    }
+
+    void setVacant(bool v) {
+	vacant = v;
+    }
+
+    bool isVacant() {
+	return vacant;
+    }
+    
+
+    static byte* findByIdentifier(byte *cardID, Cubby *cubbyArray) {
+        for (byte i = 0; i < sizeof(cubbyArray); ++i) {
+            if (memcmp(cubbyArray[i].getIdentifier(), cardID, sizeof(cubbyArray[i].getIdentifier())) == 0) {
                 // Perform actions
-		digitalWrite(cubbyArray[i].lockPin, HIGH)
-                cubbyArray[i].vacant = true;
+		digitalWrite(cubbyArray[i].getLockPin(), HIGH)
+                cubbyArray[i].setVacant(true);
                 return DEFAULTDATA;
             }
         }
@@ -82,12 +95,12 @@ public:
     }
 
 
-    const byte* findByVacancy(Cubby *cubbyArray) {
+    static byte* findByVacancy(Cubby *cubbyArray) {
         byte *output = nullptr;
-        for (byte i = 0; i < arraySize; ++i) {
-            if (cubbyArray[i].vacant) {
-                output = cubbyArray[i].identifier;
-                cubbyArray[i].vacant = false;
+        for (byte i = 0; i < sizeof(cubbyArray); ++i) {
+            if (cubbyArray[i].isVacant()) {
+                output = cubbyArray[i].getIdentifier();
+                cubbyArray[i].setVacant(false);
                 break;
             }
         }
@@ -197,9 +210,9 @@ void loop() {
     Serial.println();
 
     if (memcmp(buffer, DEFAULTDATA, 16) == 0) {
-	dataBlock = Cubby.findByVacancy(cubbies);
+	dataBlock = Cubby::findByVacancy(cubbies);
     } else {
-	dataBlock = Cubby.findByIdentifier(buffer, cubbies);
+	dataBlock = Cubby::findByIdentifier(buffer, cubbies);
     }
 
     // Authenticate using key B
